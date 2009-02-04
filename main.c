@@ -18,9 +18,12 @@
 */
 
 #include "booklist.h"
+#include <stdio.h>
 
 int main(int argc, char* argv[])
 {
   int ret = updateList(argv[1]);
+  if (ret != 0)
+    printf("Error\r\n");
   return 0;
 }
