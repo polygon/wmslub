@@ -1,8 +1,8 @@
 CXX=gcc
-CXXFLAGS=-I/usr/local/include -I/usr/include/libxml2 -g -DDEBUG
-LDFLAGS=-L/usr/local/lib -lcurl -lxml2 -g
+CXXFLAGS=-I/usr/local/include `xml2-config --cflags` `curl-config --cflags` -g -DDEBUG
+LDFLAGS=-L/usr/local/lib `curl-config --libs` `xml2-config --libs` -g
 EXECUTABLE=wmslub
-SOURCES=main.c booklist.c
+SOURCES=main.c booklist.c database.c
 OBJECTS=$(SOURCES:.c=.o)
 
 all: $(EXECUTABLE)

@@ -23,6 +23,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <regex.h>
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 #include <libxml/xpathInternals.h>
@@ -143,6 +145,18 @@ int readEntries(xmlDocPtr xmlRss)
     return -1;
   }
 
+  // Build regexp to extract the date from the description
+  regex_t dateExtract;
+  if (regcomp(&dateExtract, "([0-9][0-9]?)\\s(Jan|Feb|Mär|Apr|Mai|Jun|Jul|Aug|Sep|Okt|Nov|Dez)\\s([0-9]{4})", REG_EXTENDED))
+  {
+    fprintf(stderr, "Failed to compile date-extracting regular expression\n");
+    xmlXPathFreeObject(xpathObj);
+    xmlXPathFreeContext(xpathCtxt);
+    xmlFreeDoc(xmlRss);
+
+    return -1;
+  }
+
   // Extract data from every entry
   for (i = 0; i < xpathObj->nodesetval->nodeNr; i++)
   {
@@ -163,15 +177,93 @@ int readEntries(xmlDocPtr xmlRss)
         data = (char*)xmlNodeGetContent(entry);
     }
 
-    /// Testcode
-    if (title)  printf("Titel: %s\n", title);
-    if (url)    printf("URL: %s\n", url);
-    if (data)   printf("Data: %s\n", data);
-    printf("\n");
+    // Fail if any string is missing
+    if ((title == NULL) || (url == NULL) || (data == NULL))
+    {
+      fprintf(stderr, "Invalid entry, datafield(s) missing\n");
+      xmlXPathFreeObject(xpathObj);
+      xmlXPathFreeContext(xpathCtxt);
+      xmlFreeDoc(xmlRss);
+      regfree(&dateExtract);
+
+      return -1;
+    }
+
+    // Match description against regexp
+    regmatch_t matches[4];
+    int ret;
+    if (ret = regexec(&dateExtract, data, 4, matches, 0))
+    {
+      fprintf(stderr, "Invalid entry, date missing in description\n");
+      xmlXPathFreeObject(xpathObj);
+      xmlXPathFreeContext(xpathCtxt);
+      xmlFreeDoc(xmlRss);
+      regfree(&dateExtract);
+
+      return -1;
+    }
+
+    // Extract date-data
+    data[matches[1].rm_eo] = 0;
+    data[matches[2].rm_eo] = 0;
+    data[matches[3].rm_eo] = 0;
+
+    // Month conversion
+    char* month;
+    if (!strcmp(&data[matches[2].rm_so], "Jan"))
+      month = "01";
+    else if (!strcmp(&data[matches[2].rm_so], "Feb"))
+      month = "02";
+    else if (!strcmp(&data[matches[2].rm_so], "Mär"))
+      month = "03";
+    else if (!strcmp(&data[matches[2].rm_so], "Apr"))
+      month = "04";
+    else if (!strcmp(&data[matches[2].rm_so], "Mai"))
+      month = "05";
+    else if (!strcmp(&data[matches[2].rm_so], "Jun"))
+      month = "06";
+    else if (!strcmp(&data[matches[2].rm_so], "Jul"))
+      month = "07";
+    else if (!strcmp(&data[matches[2].rm_so], "Aug"))
+      month = "08";
+    else if (!strcmp(&data[matches[2].rm_so], "Sep"))
+      month = "09";
+    else if (!strcmp(&data[matches[2].rm_so], "Okt"))
+      month = "10";
+    else if (!strcmp(&data[matches[2].rm_so], "Nov"))
+      month = "11";
+    else if (!strcmp(&data[matches[2].rm_so], "Dez"))
+      month = "12";
+    else
+    {
+      fprintf(stderr, "Invalid entry, unknown month: %s\n", data[matches[2].rm_so]);
+      xmlXPathFreeObject(xpathObj);
+      xmlXPathFreeContext(xpathCtxt);
+      xmlFreeDoc(xmlRss);
+      regfree(&dateExtract);
+
+      return -1;
+    }
+
+    // If day is in range 0-9, add a leading zero
+    if (strlen(&data[matches[1].rm_so]) == 1)
+    {
+      matches[1].rm_so--;
+      data[matches[1].rm_so] = '0';
+    }
+
+    // Build date string
+    char date[255];
+    date[0] = 0;
+    snprintf(date, 255, "%s-%s-%s", &data[matches[3].rm_so], month, &data[matches[1].rm_so]);
+
+    // Testcode
+    printf("Date: %s\n", date);
   }
 
   xmlXPathFreeObject(xpathObj);
   xmlXPathFreeContext(xpathCtxt);
   xmlFreeDoc(xmlRss);
+  regfree(&dateExtract);
   return res;
 }
