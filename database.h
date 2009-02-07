@@ -20,4 +20,16 @@
 #ifndef _DATABASE_H
 #define _DATABASE_H
 
+int openDatabase(char* db);
+int closeDatabase(char* db);
+int beginTransaction();
+int clearBooklist();
+int addBook(char* title, char* url, char* date);
+int endTransaction();
+int abortTransaction();
+int getOk();
+int getSoon();
+int getCritical();
+int getLate();
+
 #endif // _DATABASE_H

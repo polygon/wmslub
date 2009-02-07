@@ -157,6 +157,17 @@ int readEntries(xmlDocPtr xmlRss)
     return -1;
   }
 
+  // Begin transaction on database and clear book list
+  if (beginTransaction())
+  {
+    xmlXPathFreeObject(xpathObj);
+    xmlXPathFreeContext(xpathCtxt);
+    xmlFreeDoc(xmlRss);
+
+    return -1;
+  }
+  clearBooklist();
+
   // Extract data from every entry
   for (i = 0; i < xpathObj->nodesetval->nodeNr; i++)
   {
@@ -241,6 +252,7 @@ int readEntries(xmlDocPtr xmlRss)
       xmlXPathFreeContext(xpathCtxt);
       xmlFreeDoc(xmlRss);
       regfree(&dateExtract);
+      abortTransaction();
 
       return -1;
     }
@@ -257,9 +269,20 @@ int readEntries(xmlDocPtr xmlRss)
     date[0] = 0;
     snprintf(date, 255, "%s-%s-%s", &data[matches[3].rm_so], month, &data[matches[1].rm_so]);
 
-    // Testcode
-    printf("Date: %s\n", date);
+    // Insert book to database
+    if (addBook(title, url, date))
+    {
+      xmlXPathFreeObject(xpathObj);
+      xmlXPathFreeContext(xpathCtxt);
+      xmlFreeDoc(xmlRss);
+      regfree(&dateExtract);
+      abortTransaction();
+
+      return -1;
+    }
   }
+
+  endTransaction();
 
   xmlXPathFreeObject(xpathObj);
   xmlXPathFreeContext(xpathCtxt);
