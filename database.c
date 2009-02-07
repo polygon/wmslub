@@ -368,3 +368,58 @@ int getLate()
   
   return books;
 }
+
+/*
+ * This function checks if an update is needed (the last update was never or
+ * is older than the specified amount of minutes)
+*/
+int needUpdate(int minutes)
+{
+  // Create and execute the select-command
+  sqlite3_stmt* command;
+  int ret;
+  char sql[1024];
+  snprintf(sql, 1024, "SELECT * FROM config WHERE key='lastupdate' AND value > datetime('now', '-%i minutes');", minutes);
+  if (sqlite3_prepare_v2(database, sql, -1, &command, NULL))
+  {
+    fprintf(stderr, "Failed to get last update, reason: %s\n", sqlite3_errmsg(database));
+
+    return -1;
+  }
+
+  if (sqlite3_step(command) == SQLITE_ROW) // If there is a result, we don't need to update
+    ret = 0;
+  else
+    ret = 1;
+
+  sqlite3_finalize(command);
+  
+  return ret;
+}
+
+/*
+ * Call this function after an update was done, it will update the lastupdate-value
+*/
+int updateDone()
+{
+  // Create and execute the insert-command
+  sqlite3_stmt* command;
+  if (sqlite3_prepare_v2(database, "INSERT OR REPLACE INTO config (key, value) VALUES('lastupdate', datetime('now'));", -1, &command, NULL))
+  {
+    fprintf(stderr, "Failed to update lastupdate, reason: %s\n", sqlite3_errmsg(database));
+
+    return -1;
+  }
+
+  if (sqlite3_step(command) != SQLITE_DONE)
+  {
+    fprintf(stderr, "Failed to update lastupdate, reason: %s\n", sqlite3_errmsg(database));
+    sqlite3_finalize(command);
+
+    return -1;
+  }
+
+  sqlite3_finalize(command);
+  
+  return 0;
+}

@@ -17,21 +17,21 @@
  * along with wmslub.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _DATABASE_H
-#define _DATABASE_H
+#ifndef _DOCKAPP_H
+#define _DOCKAPP_H
 
-int openDatabase(char* db);
-int closeDatabase(char* db);
-int beginTransaction();
-int clearBooklist();
-int addBook(char* title, char* url, char* date);
-int endTransaction();
-int abortTransaction();
-int getOk();
-int getSoon();
-int getCritical();
-int getLate();
-int needUpdate(int minutes);
-int updateDone();
+#include <gai/gai.h>
 
-#endif // _DATABASE_H
+typedef struct 
+{
+  int ok;
+  int soon;
+  int crit;
+  int late;
+} bookdata;
+
+void preInit(int* argc, char** argv[]);
+int initDockapp(GaiCallback0 func);
+void launchDockapp();
+
+#endif // _DOCKAPP_H

@@ -1,8 +1,8 @@
-CXX=g++
-CXXFLAGS=-I/usr/local/include `xml2-config --cflags` `curl-config --cflags` -g -DDEBUG
-LDFLAGS=-L/usr/local/lib `curl-config --libs` `xml2-config --libs` -lsqlite3 -ldockapp -g
+CXX=gcc
+CXXFLAGS=-I/usr/local/include `pkg-config --cflags gai` `xml2-config --cflags` `curl-config --cflags` `pkg-config --cflags sqlite3` -g -DDEBUG
+LDFLAGS=-L/usr/local/lib `pkg-config --libs gai` `curl-config --libs` `xml2-config --libs` `pkg-config --libs sqlite3` -g
 EXECUTABLE=wmslub
-SOURCES=main.c booklist.c database.c
+SOURCES=main.c booklist.c database.c dockapp.c
 OBJECTS=$(SOURCES:.c=.o)
 
 all: $(EXECUTABLE)
