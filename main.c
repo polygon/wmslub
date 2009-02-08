@@ -31,11 +31,14 @@ char db[1024];
 
 gboolean update(gpointer userdata)
 {
+  int update = 0;
+
   // Update booklist if that is needed
   if (needUpdate(10) == 1)
   {
     updateList(url);
     updateDone();
+    update = 1;
   }
 
   bookdata* bd = (bookdata*)userdata;
@@ -43,7 +46,7 @@ gboolean update(gpointer userdata)
   bd->soon = getSoon();
   bd->crit = getCritical();
   bd->late = getLate();
-  return TRUE;
+  return update;
 }
 
 void printUsage()
